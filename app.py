@@ -38,8 +38,11 @@ def login():
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
             session.permanent = True
-            user.last_login = datetime.utcnow()
-            db.session.commit()
+            try:
+                user.last_login = datetime.utcnow()
+                db.session.commit()
+            except:
+                pass
             return redirect(url_for('dashboard'))
         else:
             flash('Invalid email or password', 'error')
