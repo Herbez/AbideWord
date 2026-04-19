@@ -1,0 +1,204 @@
+<!-- CONTENT -->
+<main class="content">
+
+  <!-- ══ DASHBOARD ══ -->
+  <div id="page-dashboard" class="page-content active">
+    <div class="banner">
+      <div class="banner-text">
+        <div class="banner-label">Admin Dashboard</div>
+        <div class="banner-title">Welcome back, {{ current_user.name }}</div>
+        <div class="banner-sub">Manage your biblical content, publish topics, and equip believers with the Word — one topic at a time.</div>
+        <div class="banner-date" id="bannerDate"></div>
+      </div>
+      <div class="banner-icon">
+        <svg viewBox="0 0 24 24"><path d="M6 2h12a1 1 0 011 1v18l-7-3-7 3V3a1 1 0 011-1z"/></svg>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="stat-card">
+        <div class="stat-icon ic-blue"><svg viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></svg></div>
+        <div class="stat-content">
+          <div class="stat-label">Categories</div>
+          <div class="stat-value">{{ category_count }}</div>
+          <div class="stat-sub">Active subject areas</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon ic-green"><svg viewBox="0 0 24 24"><path d="M6 2h12a1 1 0 011 1v18l-7-3-7 3V3a1 1 0 011-1z"/></svg></div>
+        <div class="stat-content">
+          <div class="stat-label">Published Topics</div>
+          <div class="stat-value">{{ published_count }}</div>
+          <div class="stat-sub">+{{ published_this_month_count }} this month</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon ic-slate"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></div>
+        <div class="stat-content">
+          <div class="stat-label">Drafts</div>
+          <div class="stat-value">{{ draft_count }}</div>
+          <div class="stat-sub">Awaiting review</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon ic-rose"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <div class="stat-content">
+          <div class="stat-label">Topics This Month</div>
+          <div class="stat-value">{{ topics_this_month_count }}</div>
+          <div class="stat-sub">Goal: 10 per month</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Topics published per month</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="topicsChart"></canvas>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Recent topics</span>
+          <a href="/admin/topics" class="panel-link">View all →</a>
+        </div>
+        <div class="recent-list">
+          {% for topic in recent_topics %}
+          <div class="recent-item">
+            <div class="r-thumb">{% if topic.thumbnail %}<img src="{{ topic.thumbnail }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"/>{% else %}📖{% endif %}</div>
+            <div class="r-info"><div class="r-title">{{ topic.title }}</div><div class="r-cat">{{ topic.category.name if topic.category else 'Uncategorized' }}</div></div><span class="badge {% if topic.published %}b-pub{% else %}b-dft{% endif %}">{% if topic.published %}Live{% else %}Draft{% endif %}</span>
+          </div>
+          {% endfor %}
+          {% if not recent_topics %}
+          <div class="recent-item"><div class="r-info"><div class="r-title">No topics yet</div></div></div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ CATEGORIES ══ -->
+  <div id="page-categories" class="page-content">
+    <div class="section-header">
+      <span class="section-title">Categories</span>
+      <button class="btn-primary" onclick="toggleForm('catForm')">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Category
+      </button>
+    </div>
+
+    <div class="full-panel" id="catForm" style="display:none;">
+      <div class="panel-header">
+        <span class="panel-title">Add new category</span>
+        <button class="panel-link" onclick="toggleForm('catForm')">Cancel</button>
+      </div>
+      <form action="/admin/categories" method="POST">
+        <div class="form-section">
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Category name *</label>
+              <input type="text" name="name" id="catName" placeholder="e.g. Money & Wealth" required oninput="autoSlug(this,'catSlug')"/>
+            </div>
+            <div class="form-field">
+              <label>Slug (auto-generated)</label>
+              <input type="text" name="slug" id="catSlug" class="ro-field" placeholder="money-wealth" readonly/>
+            </div>
+            <div class="form-field full">
+              <label>Description</label>
+              <textarea name="description" placeholder="Short description shown on the category listing page..."></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Save category</button>
+          <button type="button" class="btn-secondary" onclick="toggleForm('catForm')">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    {% if edit_category %}
+    <div class="full-panel" id="editForm" style="display:block;">
+      <div class="panel-header">
+        <span class="panel-title">Edit category</span>
+        <a href="/admin/categories" class="panel-link">Cancel</a>
+      </div>
+      <form action="/admin/categories/{{ edit_category.id }}/edit" method="POST">
+        <div class="form-section">
+          <div class="form-grid">
+            <div class="form-field">
+              <label>Category name *</label>
+              <input type="text" name="name" value="{{ edit_category.name }}" required oninput="autoSlug(this,'editCatSlug')"/>
+            </div>
+            <div class="form-field">
+              <label>Slug</label>
+              <input type="text" name="slug" id="editCatSlug" value="{{ edit_category.slug }}" class="ro-field" readonly/>
+            </div>
+            <div class="form-field full">
+              <label>Description</label>
+              <textarea name="description">{{ edit_category.description or '' }}</textarea>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">Update category</button>
+          <a href="/admin/categories" class="btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
+    <div class="full-panel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Slug</th><th>Description</th><th>Topics</th><th>Actions</th></tr></thead>
+          <tbody>
+            {% for category in categories %}
+            <tr><td>{{ loop.index }}</td><td class="td-bold">{{ category.name }}</td><td class="td-muted">{{ category.slug }}</td><td class="td-muted">{{ category.description or '-' }}</td><td>0</td><td><div class="action-btns"><form action="/admin/categories/{{ category.id }}/edit" method="GET" style="display:inline;"><button type="submit" class="btn-e">Edit</button></form><form action="/admin/categories/{{ category.id }}/delete" method="POST" style="display:inline;"><button type="submit" class="btn-d" onclick="return confirm('Are you sure you want to delete this category?')">Delete</button></form></div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ USERS ══ -->
+  <div id="page-users" class="page-content">
+    <div class="section-header">
+      <span class="section-title">Admin Users</span>
+      <button class="btn-primary" onclick="toggleForm('userForm')">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Admin
+      </button>
+    </div>
+    <div class="full-panel" id="userForm" style="display:none;">
+      <div class="panel-header">
+        <span class="panel-title">Add new admin user</span>
+        <button class="panel-link" onclick="toggleForm('userForm')">Cancel</button>
+      </div>
+      <div class="form-section">
+        <div class="form-grid">
+          <div class="form-field"><label>Full name *</label><input type="text" placeholder="e.g. John Doe"/></div>
+          <div class="form-field"><label>Email address *</label><input type="email" placeholder="john@discipelink.org"/></div>
+          <div class="form-field"><label>Password *</label><input type="password" placeholder="Set a strong password"/></div>
+          <div class="form-field"><label>Role</label><select><option>Admin</option><option>Super Admin</option></select></div>
+        </div>
+      </div>
+      <div class="form-actions"><button class="btn-primary">Create admin</button><button class="btn-secondary" onclick="toggleForm('userForm')">Cancel</button></div>
+    </div>
+    <div class="full-panel">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td class="td-bold">Admin User</td><td class="td-muted">admin@discipelink.org</td><td><span class="badge b-violet">Super Admin</span></td><td><span class="badge b-pub">Active</span></td><td class="td-muted">Today</td><td><div class="action-btns"><button class="btn-e">Edit</button><button class="btn-d">Remove</button></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+
+</main>

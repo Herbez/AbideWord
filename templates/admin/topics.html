@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Topics — AbideWord Admin</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo.png') }}"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet"/>
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+</head>
+<body>
+<div class="layout">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+{% include 'admin/components/sidebar.html' %}
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+
+  {% include 'admin/components/topbar.html' %}
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- Banner -->
+    <div class="banner">
+      <div class="banner-text">
+        <div class="banner-title">Manage Topics</div>
+        <div class="banner-sub">Create and manage topics for your content</div>
+        <div class="banner-date" id="bannerDate"></div>
+      </div>
+      <div class="banner-icon">
+        <svg viewBox="0 0 24 24"><path d="M6 2h12a1 1 0 011 1v18l-7-3-7 3V3a1 1 0 011-1z"/></svg>
+      </div>
+    </div>
+    
+    <!-- ══ TOPICS ══ -->
+    <div id="page-topics" class="page-content active">
+      <div class="section-header">
+        <span class="section-title">Topics</span>
+        <button class="btn-primary" onclick="toggleForm('topicForm')">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Topic
+        </button>
+      </div>
+
+      <div class="full-panel" id="topicForm" style="display:none;">
+        <div class="panel-header">
+          <span class="panel-title">Add new topic</span>
+          
+        </div>
+        <form action="/admin/topics" method="POST" id="createTopicForm" enctype="multipart/form-data">
+          <div class="form-section">
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Category *</label>
+                <select name="category_id" required>
+                  <option value="">Select category</option>
+                  {% for category in categories %}
+                  <option value="{{ category.id }}">{{ category.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Title *</label>
+                <input type="text" name="title" id="topicTitle" placeholder="e.g. Understanding Faith" required oninput="autoSlug(this,'topicSlug')"/>
+              </div>
+              <div class="form-field">
+                <label>Slug (auto-generated)</label>
+                <input type="text" name="slug" id="topicSlug" class="ro-field" placeholder="understanding-faith" readonly/>
+              </div>
+              <div class="form-field full">
+                <label>Description</label>
+                <textarea name="description" placeholder="Short description of the topic..."></textarea>
+              </div>
+              <div class="form-field full">
+                <label>Body *</label>
+                <input type="hidden" name="body" id="bodyInput" required/>
+                <div id="bodyEditor" style="height: 300px;"></div>
+              </div>
+              <div class="form-field">
+                <label>Thumbnail</label>
+                <input type="file" name="thumbnail" accept="image/*"/>
+              </div>
+              <div class="form-field">
+                <label>Scripture* Press Enter or comma to add</label>
+                <div class="tags-container" id="scriptureTags"></div>
+                <input type="text" name="scripture_ref" id="scriptureInput" placeholder="e.g. Hebrews 11:1" onkeydown="handleScriptureInput(event, 'scriptureInput', 'scriptureTags', 'scriptureHidden')"/>
+                <input type="hidden" name="scripture_ref_hidden" id="scriptureHidden" value=""/>
+              </div>
+              <div class="form-field">
+                <label>
+                  <input type="checkbox" name="published" />
+                  Published
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" onclick="showCreatePopup(event)">Save topic</button>
+            <button type="button" class="btn-secondary" onclick="toggleForm('topicForm')">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      {% if edit_topic %}
+      <div class="full-panel" id="editForm" style="display:block;">
+        <div class="panel-header">
+          <span class="panel-title">Edit topic</span>
+          
+        </div>
+        <form action="/admin/topics/{{ edit_topic.id }}/edit" method="POST" id="editTopicForm" enctype="multipart/form-data">
+          <div class="form-section">
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Category *</label>
+                <select name="category_id" required>
+                  <option value="">Select category</option>
+                  {% for category in categories %}
+                  <option value="{{ category.id }}" {% if category.id == edit_topic.category_id %}selected{% endif %}>{{ category.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="form-field">
+                <label>Title *</label>
+                <input type="text" name="title" value="{{ edit_topic.title }}" required oninput="autoSlug(this,'editTopicSlug')"/>
+              </div>
+              <div class="form-field">
+                <label>Slug</label>
+                <input type="text" name="slug" id="editTopicSlug" value="{{ edit_topic.slug }}" class="ro-field" readonly/>
+              </div>
+              <div class="form-field full">
+                <label>Description</label>
+                <textarea name="description">{{ edit_topic.description or '' }}</textarea>
+              </div>
+              <div class="form-field full">
+                <label>Body *</label>
+                <input type="hidden" name="body" id="editBodyInput" value="{{ edit_topic.body }}" required/>
+                <div id="editBodyEditor" style="height: 300px;"></div>
+              </div>
+              <div class="form-field">
+                <label>Thumbnail</label>
+                <input type="file" name="thumbnail" accept="image/*"/>
+                {% if edit_topic.thumbnail %}
+                <div class="current-thumbnail">
+                  <img src="{{ edit_topic.thumbnail }}" alt="Current thumbnail" style="max-width: 100px; max-height: 100px; margin-top: 5px; border-radius: 8px;"/>
+                  <small>Current thumbnail</small>
+                </div>
+                {% endif %}
+              </div>
+              <div class="form-field">
+                <label>Scripture* Press Enter or comma to add</label>
+                <div class="tags-container" id="editScriptureTags"></div>
+                <input type="text" name="scripture_ref" id="editScriptureInput" placeholder="e.g. Hebrews 11:1" onkeydown="handleScriptureInput(event, 'editScriptureInput', 'editScriptureTags', 'editScriptureHidden')"/>
+                <input type="hidden" name="scripture_ref_hidden" id="editScriptureHidden" value="{{ edit_topic.scripture_ref or '' }}"/>
+              </div>
+              <div class="form-field">
+                <label>
+                  <input type="checkbox" name="published" {% if edit_topic.published %}checked{% endif %} />
+                  Published
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" onclick="showEditPopup(event)">Update topic</button>
+            <a href="/admin/topics" class="btn-secondary" style="text-decoration: none;">Cancel</a>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+
+      <div class="filter-bar">
+        <select id="categoryFilter" onchange="filterTopics()">
+          <option value="">All Categories</option>
+          {% for category in categories %}
+          <option value="{{ category.id }}">{{ category.name }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" id="searchInput" placeholder="Search title or scripture..." oninput="filterTopics()"/>
+        <button class="btn-secondary" onclick="clearFilters()">Clear</button>
+      </div>
+
+      <div class="full-panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Thumbnail</th><th>Title</th><th>Category</th><th>Scripture</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="topicsTableBody">
+              {% for topic in topics %}
+              <tr data-category-id="{{ topic.category_id if topic.category_id else '' }}" data-title="{{ topic.title|lower }}" data-scripture="{{ topic.scripture_ref|lower if topic.scripture_ref else '' }}">
+                <td>{{ loop.index }}</td>
+                <td>{% if topic.thumbnail %}
+                  <img src="{{ topic.thumbnail }}" alt="" style="width:50px;height:50px;object-fit:cover;border-radius:6px;"/>{% else %}<span style="color:var(--text-muted)">-</span>{% endif %}</td>
+                  <td class="td-bold">{{ topic.title }}</td>
+                  <td class="td-muted">{{ topic.category.name if topic.category else '-' }}</td>
+                  <td class="td-muted">{{ topic.scripture_ref if topic.scripture_ref else '-' }}</td>
+                  <td>{% if topic.published %}<span class="status-published">Published</span>{% else %}<span class="status-draft">Draft</span>{% endif %}</td>
+                  <td>
+                    <div class="action-btns">
+                      <button type="button" class="btn-v" onclick="showViewModal(this)" data-title="{{ topic.title }}" data-category="{{ topic.category.name if topic.category else 'Uncategorized' }}" data-status="{% if topic.published %}Published{% else %}Draft{% endif %}" data-body="{{ topic.body|e }}">View</button>
+                      <form action="/admin/topics/{{ topic.id }}/edit" method="GET" style="display:inline;"><button type="submit" class="btn-e">Edit</button></form>
+                      <form action="/admin/topics/{{ topic.id }}/delete" method="POST" style="display:inline;">
+                        <button type="submit" class="btn-d" onclick="showDeletePopup(event)">Delete</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- CONFIRMATION MODAL -->
+  <div class="confirm-modal" id="confirmModal">
+    <div class="confirm-modal-content">
+      <div class="confirm-modal-header">
+        <div class="confirm-modal-icon" id="modalIcon">
+          <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="confirm-modal-title" id="modalTitle">Confirm Action</div>
+      </div>
+      <div class="confirm-modal-message" id="modalMessage">Are you sure you want to proceed?</div>
+      <div class="confirm-modal-actions">
+        <button class="confirm-modal-btn confirm-modal-btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="confirm-modal-btn confirm-modal-btn-confirm" id="modalConfirmBtn" onclick="confirmAction()">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW TOPIC MODAL -->
+  <div class="view-modal" id="viewModal">
+    <div class="view-modal-content">
+      <div class="view-modal-header">
+        <div class="view-modal-title">Topic Details</div>
+        <button class="view-modal-close" onclick="closeViewModal()">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="view-modal-body">
+        <div class="view-modal-meta">
+          <div class="view-meta-item">
+            <span class="view-meta-label">Category</span>
+            <span class="view-meta-value" id="viewCategory">-</span>
+          </div>
+          <div class="view-meta-item">
+            <span class="view-meta-label">Status</span>
+            <span class="view-meta-value" id="viewStatus">-</span>
+          </div>
+        </div>
+        <div class="view-modal-topic-title" id="viewTitle">-</div>
+        <div class="view-modal-content-scroll">
+          <div class="view-modal-text ql-editor" id="viewBody">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  {% include 'admin/components/footer.html' %}
+</div>
+</div>
+
+<script>
+// Set active nav item based on current URL
+document.addEventListener('DOMContentLoaded', function() {
+  const currentPath = window.location.pathname;
+  const navItems = document.querySelectorAll('.nav-item');
+  
+  // Remove active class from all nav items first
+  navItems.forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  // Find the most specific matching nav item
+  let bestMatch = null;
+  let bestMatchLength = 0;
+  
+  navItems.forEach(item => {
+    const href = item.getAttribute('href');
+    if (href && currentPath.startsWith(href)) {
+      // Check if this is a better (longer) match
+      if (href.length > bestMatchLength) {
+        bestMatch = item;
+        bestMatchLength = href.length;
+      }
+    }
+  });
+  
+  // Add active class to the best match
+  if (bestMatch) {
+    bestMatch.classList.add('active');
+  }
+});
+
+// Sidebar
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// Forms
+function toggleForm(id){
+  const el=document.getElementById(id);
+  el.style.display=el.style.display==='none'?'block':'none';
+  if(el.style.display==='block') el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// Slug
+function autoSlug(inp,tid){
+  document.getElementById(tid).value=inp.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+
+// Notifications
+function toggleNotif(){document.getElementById('notifDrop').classList.toggle('open');}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.icon-btn')&&!e.target.closest('#notifDrop')) document.getElementById('notifDrop').classList.remove('open');
+});
+
+// Pop-up functions
+let pendingForm = null;
+let pendingEvent = null;
+
+function showCreatePopup(event) {
+  event.preventDefault();
+  // Sync Quill editor content to hidden input before submission
+  if (typeof bodyEditor !== 'undefined') {
+    document.getElementById('bodyInput').value = bodyEditor.root.innerHTML;
+  }
+  showModal('success', 'Create Topic', 'Are you sure you want to create this topic?', document.getElementById('createTopicForm'), null);
+}
+
+function showEditPopup(event) {
+  event.preventDefault();
+  // Sync Quill editor content to hidden input before submission
+  if (typeof editBodyEditor !== 'undefined') {
+    document.getElementById('editBodyInput').value = editBodyEditor.root.innerHTML;
+  }
+  showModal('info', 'Update Topic', 'Are you sure you want to update this topic?', document.getElementById('editTopicForm'), null);
+}
+
+function showDeletePopup(event) {
+  event.preventDefault();
+  showModal('danger', 'Delete Topic', 'Are you sure you want to delete this topic?', event.target.form, event);
+}
+
+function showModal(type, title, message, form, event){
+  const modal = document.getElementById('confirmModal');
+  const icon = document.getElementById('modalIcon');
+  const titleEl = document.getElementById('modalTitle');
+  const messageEl = document.getElementById('modalMessage');
+  const confirmBtn = document.getElementById('modalConfirmBtn');
+  
+  // Reset classes
+  icon.classList.remove('success', 'info', 'danger');
+  confirmBtn.classList.remove('success', 'danger');
+  
+  // Set content
+  titleEl.textContent = title;
+  messageEl.textContent = message;
+  
+  // Set type-specific styling
+  if(type === 'success'){
+    icon.classList.add('success');
+    icon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
+    confirmBtn.classList.add('success');
+    confirmBtn.textContent = 'Yes';
+  } else if(type === 'info'){
+    icon.classList.add('info');
+    icon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+    confirmBtn.classList.add('info');
+    confirmBtn.textContent = 'Yes';
+  } else if(type === 'danger'){
+    icon.classList.add('danger');
+    icon.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+    confirmBtn.classList.add('danger');
+    confirmBtn.textContent = 'Yes';
+  }
+  
+  // Store pending action
+  pendingForm = form;
+  pendingEvent = event;
+  
+  // Show modal
+  modal.classList.add('active');
+}
+
+function closeModal(){
+  const modal = document.getElementById('confirmModal');
+  modal.classList.remove('active');
+  pendingForm = null;
+  pendingEvent = null;
+}
+
+function confirmAction(){
+  if(pendingForm){
+    pendingForm.submit();
+  } else if(pendingEvent){
+    // For delete actions that are forms
+    if(pendingEvent.target.tagName === 'FORM'){
+      pendingEvent.target.submit();
+    }
+  }
+  closeModal();
+}
+
+// Scripture tag input
+function handleScriptureInput(event, inputId, tagsId, hiddenId) {
+  const input = document.getElementById(inputId);
+  const tagsContainer = document.getElementById(tagsId);
+  const hiddenInput = document.getElementById(hiddenId);
+  
+  if (event.key === 'Enter' || event.key === ',') {
+    event.preventDefault();
+    const value = input.value.trim();
+    if (value) {
+      addTag(value, tagsContainer, hiddenInput);
+      input.value = '';
+    }
+  }
+}
+
+function addTag(text, tagsContainer, hiddenInput) {
+  const existingTags = Array.from(tagsContainer.querySelectorAll('.tag')).map(tag => tag.dataset.value);
+  if (existingTags.includes(text)) return;
+  
+  const tag = document.createElement('span');
+  tag.className = 'tag';
+  tag.dataset.value = text;
+  tag.innerHTML = `${text}<span class="tag-remove" onclick="removeTag(this)">×</span>`;
+  tagsContainer.appendChild(tag);
+  
+  updateHiddenInput(tagsContainer, hiddenInput);
+}
+
+function removeTag(button) {
+  const tag = button.parentElement;
+  const tagsContainer = tag.parentElement;
+  const hiddenInput = tagsContainer.nextElementSibling.nextElementSibling;
+  tag.remove();
+  updateHiddenInput(tagsContainer, hiddenInput);
+}
+
+function updateHiddenInput(tagsContainer, hiddenInput) {
+  const tags = Array.from(tagsContainer.querySelectorAll('.tag')).map(tag => tag.dataset.value);
+  hiddenInput.value = tags.join(', ');
+}
+
+// Initialize tags on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize create form tags
+  const createHidden = document.getElementById('scriptureHidden');
+  if (createHidden && createHidden.value) {
+    const tags = createHidden.value.split(',').map(t => t.trim()).filter(t => t);
+    const tagsContainer = document.getElementById('scriptureTags');
+    tags.forEach(tag => addTag(tag, tagsContainer, createHidden));
+  }
+  
+  // Initialize edit form tags
+  const editHidden = document.getElementById('editScriptureHidden');
+  if (editHidden && editHidden.value) {
+    const tags = editHidden.value.split(',').map(t => t.trim()).filter(t => t);
+    const tagsContainer = document.getElementById('editScriptureTags');
+    tags.forEach(tag => addTag(tag, tagsContainer, editHidden));
+  }
+});
+
+// Filter topics
+function filterTopics() {
+  const categoryFilter = document.getElementById('categoryFilter').value;
+  const searchInput = document.getElementById('searchInput').value.toLowerCase();
+  const tableBody = document.getElementById('topicsTableBody');
+  const rows = tableBody.querySelectorAll('tr');
+  
+  rows.forEach(row => {
+    const categoryId = row.dataset.categoryId || '';
+    const title = row.dataset.title || '';
+    const scripture = row.dataset.scripture || '';
+    
+    const categoryMatch = !categoryFilter || categoryId === categoryFilter;
+    const searchMatch = !searchInput || title.includes(searchInput) || scripture.includes(searchInput);
+    
+    row.style.display = categoryMatch && searchMatch ? '' : 'none';
+  });
+}
+
+// Clear filters
+function clearFilters() {
+  document.getElementById('categoryFilter').value = '';
+  document.getElementById('searchInput').value = '';
+  filterTopics();
+}
+
+// View modal functions
+function showViewModal(button) {
+  const modal = document.getElementById('viewModal');
+  const title = button.getAttribute('data-title');
+  const category = button.getAttribute('data-category');
+  const status = button.getAttribute('data-status');
+  const body = button.getAttribute('data-body');
+
+  document.getElementById('viewTitle').textContent = title;
+  document.getElementById('viewCategory').textContent = category;
+  document.getElementById('viewStatus').textContent = status;
+  document.getElementById('viewBody').innerHTML = body;
+
+  modal.classList.add('active');
+}
+
+function closeViewModal() {
+  const modal = document.getElementById('viewModal');
+  modal.classList.remove('active');
+}
+
+// Close view modal on outside click
+document.getElementById('viewModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeViewModal();
+  }
+});
+
+// Close view modal on escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeViewModal();
+    closeModal();
+  }
+});
+
+// Initialize Quill editors
+let bodyEditor;
+let editBodyEditor;
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Create form editor
+  bodyEditor = new Quill('#bodyEditor', {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'align': [] }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        ['link', 'clean']
+      ]
+    },
+    formats: [
+      'header', 'bold', 'italic', 'underline', 'strike',
+      'list', 'bullet', 'align', 'size', 'link'
+    ]
+  });
+
+  // Update hidden input on form submission
+  document.getElementById('createTopicForm').addEventListener('submit', function() {
+    document.getElementById('bodyInput').value = bodyEditor.root.innerHTML;
+  });
+
+  // Edit form editor
+  editBodyEditor = new Quill('#editBodyEditor', {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'align': [] }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
+        ['link', 'clean']
+      ]
+    },
+    formats: [
+      'header', 'bold', 'italic', 'underline', 'strike',
+      'list', 'bullet', 'align', 'size', 'link'
+    ]
+  });
+
+  // Set initial content for edit form
+  const editBodyInput = document.getElementById('editBodyInput');
+  if (editBodyInput && editBodyInput.value) {
+    editBodyEditor.root.innerHTML = editBodyInput.value;
+  }
+
+  // Update hidden input on edit form submission
+  const editForm = document.getElementById('editTopicForm');
+  if (editForm) {
+    editForm.addEventListener('submit', function() {
+      document.getElementById('editBodyInput').value = editBodyEditor.root.innerHTML;
+    });
+  }
+});
+</script>
+</body>
+</html>

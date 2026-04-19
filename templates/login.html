@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AbideWord — Admin Login</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo.png') }}"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}"/>
+</head>
+<body>
+
+<div class="card" role="main">
+
+  <!-- Logo area -->
+  <div class="logo-area">
+    
+    <div class="logo-box">
+      <!-- Book / Word icon -->
+      <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="6" y="4" width="18" height="26" rx="2" fill="#FAEEDA" opacity="0.15"/>
+        <path d="M8 6h14a2 2 0 012 2v20l-9-4-9 4V8a2 2 0 012-2z" fill="#FAEEDA"/>
+        <path d="M12 13h8M12 17h5" stroke="#EF9F27" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- Place your logo image here -->
+        <!-- <image href="logo.png" x="4" y="4" width="28" height="28"/> -->
+      </svg>
+      <div class="logo-dot"></div>
+    </div>
+    <div class="brand-name">AbideWord</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <h1 class="form-heading">Welcome back</h1>
+  <p class="form-sub">Log in to your account to continue!</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        {% if category == 'info' or category == 'error' %}
+        <div style="padding: 12px; margin-bottom: 1rem; border-radius: 8px; font-size: 13px; text-align: center; {% if category == 'error' %}background: #fee2e2; color: #dc2626;{% else %}background: #dbeafe; color: #1e40af;{% endif %}">
+          {{ message }}
+        </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form action="/signin" method="POST" novalidate id="loginForm">
+
+    <div class="field">
+      <label for="email">Email address</label>
+      <div class="input-wrap">
+        <input type="email" id="email" name="email" placeholder="you@truedisciple.org" autocomplete="email" required />
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="4" width="20" height="16" rx="2"/>
+          <path d="M2 7l10 7 10-7"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="input-wrap">
+        <input type="password" id="password" name="password" placeholder="••••••••••" autocomplete="current-password" required />
+        <svg class="lock-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <rect x="5" y="11" width="14" height="10" rx="2"/>
+          <path d="M8 11V7a4 4 0 018 0v4"/>
+        </svg>
+        <button type="button" class="toggle-password" onclick="togglePassword()">
+          <svg class="eye-open" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <svg class="eye-closed" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M1 1l22 22"/>
+            <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+          </svg>
+        </button>
+      </div>
+    </div> 
+
+    <div class="forgot-row">
+      <a href="/reset-password">Forgot password?</a>
+    </div>
+
+    <button type="submit" class="btn" id="signInBtn">
+      <span class="btn-text">Sign in</span>
+      <svg class="btn-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+        <polyline points="10 17 15 12 10 7"/>
+        <line x1="15" y1="12" x2="3" y2="12"/>
+      </svg>
+      <svg class="spinner" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="30" stroke-dashoffset="0">
+          <animate attributeName="stroke-dashoffset" from="30" to="0" dur="1.5s" repeatCount="indefinite"/>
+          <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </button>
+
+  </form>
+
+</div>
+
+<script>
+function togglePassword() {
+  const passwordInput = document.getElementById('password');
+  const eyeOpen = document.querySelector('.eye-open');
+  const eyeClosed = document.querySelector('.eye-closed');
+
+  if (passwordInput.type === 'password') {
+    passwordInput.type = 'text';
+    eyeOpen.style.display = 'none';
+    eyeClosed.style.display = 'block';
+  } else {
+    passwordInput.type = 'password';
+    eyeOpen.style.display = 'block';
+    eyeClosed.style.display = 'none';
+  }
+}
+
+// Handle Sign in button loading state
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const form = this;
+  const btn = document.getElementById('signInBtn');
+  const btnText = btn.querySelector('.btn-text');
+  const btnIcon = btn.querySelector('.btn-icon');
+  const spinner = btn.querySelector('.spinner');
+
+  // Show loading state
+  btnText.style.display = 'none';
+  btnIcon.style.display = 'none';
+  spinner.style.display = 'block';
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+  btn.style.cursor = 'not-allowed';
+
+  // Wait for 1 rotations (1.5 seconds) then submit
+  setTimeout(function() {
+    form.submit();
+  }, 1500);
+});
+</script>
+
+</body>
+</html>

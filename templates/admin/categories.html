@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Categories — AbideWord Admin</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo.png') }}"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+
+</head>
+<body>
+<div class="layout">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+{% include 'admin/components/sidebar.html' %}
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+
+  {% include 'admin/components/topbar.html' %}
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- Banner -->
+    <div class="banner">
+      <div class="banner-text">
+        <div class="banner-title">Manage Categories</div>
+        <div class="banner-sub">Create and manage categories for your content</div>
+        <div class="banner-date" id="bannerDate"></div>
+      </div>
+      <div class="banner-icon">
+        <svg viewBox="0 0 24 24"><path d="M6 2h12a1 1 0 011 1v18l-7-3-7 3V3a1 1 0 011-1z"/></svg>
+      </div>
+    </div>
+    
+    <!-- ══ CATEGORIES ══ -->
+    <div id="page-categories" class="page-content active">
+      <div class="section-header">
+        <span class="section-title">Categories</span>
+        <button class="btn-primary" onclick="toggleForm('catForm')">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Category
+        </button>
+      </div>
+
+      <div class="full-panel" id="catForm" style="display:none;">
+        <div class="panel-header">
+          <span class="panel-title">Add new category</span>
+          
+        </div>
+        <form action="/admin/categories" method="POST" id="createCategoryForm">
+          <div class="form-section">
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Category name *</label>
+                <input type="text" name="name" id="catName" placeholder="e.g. Money & Wealth" required oninput="autoSlug(this,'catSlug')"/>
+              </div>
+              <div class="form-field">
+                <label>Slug (auto-generated)</label>
+                <input type="text" name="slug" id="catSlug" class="ro-field" placeholder="money-wealth" readonly/>
+              </div>
+              <div class="form-field full">
+                <label>Description</label>
+                <textarea name="description" placeholder="Short description shown on the category listing page..."></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" onclick="showCreatePopup(event)">Save category</button>
+            <button type="button" class="btn-secondary" onclick="toggleForm('catForm')">Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      {% if edit_category %}
+      <div class="full-panel" id="editForm" style="display:block;">
+        <div class="panel-header">
+          <span class="panel-title">Edit category</span>
+          
+        </div>
+        <form action="/admin/categories/{{ edit_category.id }}/edit" method="POST" id="editCategoryForm">
+          <div class="form-section">
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Category name *</label>
+                <input type="text" name="name" value="{{ edit_category.name }}" required oninput="autoSlug(this,'editCatSlug')"/>
+              </div>
+              <div class="form-field">
+                <label>Slug</label>
+                <input type="text" name="slug" id="editCatSlug" value="{{ edit_category.slug }}" class="ro-field" readonly/>
+              </div>
+              <div class="form-field full">
+                <label>Description</label>
+                <textarea name="description">{{ edit_category.description or '' }}</textarea>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" onclick="showEditPopup(event)">Update category</button>
+            <a href="/admin/categories" class="btn-secondary" style="text-decoration: none;">Cancel</a>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+
+      <div class="full-panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Slug</th><th>Description</th><th>Topics</th><th>Actions</th></tr></thead>
+            <tbody>
+              {% for category in categories %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td class="td-bold">{{ category.name }}</td>
+                <td class="td-muted">{{ category.slug }}</td>
+                <td class="td-muted">{{ category.description or '-' }}</td>
+                <td>{{ category.abide_words|length }}</td>
+                <td>
+                  <div class="action-btns">
+                    <form action="/admin/categories/{{ category.id }}/edit" method="GET" style="display:inline;">
+                      <button type="submit" class="btn-e">Edit</button>
+                    </form>
+                    <form action="/admin/categories/{{ category.id }}/delete" method="POST" style="display:inline;">
+                      <button type="submit" class="btn-d" onclick="showDeletePopup(event)">Delete</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- CONFIRMATION MODAL -->
+  <div class="confirm-modal" id="confirmModal">
+    <div class="confirm-modal-content">
+      <div class="confirm-modal-header">
+        <div class="confirm-modal-icon" id="modalIcon">
+          <svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <div class="confirm-modal-title" id="modalTitle">Confirm Action</div>
+      </div>
+      <div class="confirm-modal-message" id="modalMessage">Are you sure you want to proceed?</div>
+      <div class="confirm-modal-actions">
+        <button class="confirm-modal-btn confirm-modal-btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="confirm-modal-btn confirm-modal-btn-confirm" id="modalConfirmBtn" onclick="confirmAction()">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  {% include 'admin/components/footer.html' %}
+</div>
+</div>
+
+<script>
+// Set active nav item based on current URL
+document.addEventListener('DOMContentLoaded', function() {
+  const currentPath = window.location.pathname;
+  const navItems = document.querySelectorAll('.nav-item');
+  
+  // Remove active class from all nav items first
+  navItems.forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  // Find the most specific matching nav item
+  let bestMatch = null;
+  let bestMatchLength = 0;
+  
+  navItems.forEach(item => {
+    const href = item.getAttribute('href');
+    if (href && currentPath.startsWith(href)) {
+      // Check if this is a better (longer) match
+      if (href.length > bestMatchLength) {
+        bestMatch = item;
+        bestMatchLength = href.length;
+      }
+    }
+  });
+  
+  // Add active class to the best match
+  if (bestMatch) {
+    bestMatch.classList.add('active');
+  }
+});
+
+// Sidebar
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// Forms
+function toggleForm(id){
+  const el=document.getElementById(id);
+  el.style.display=el.style.display==='none'?'block':'none';
+  if(el.style.display==='block') el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// Slug
+function autoSlug(inp,tid){
+  document.getElementById(tid).value=inp.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+
+// Notifications
+function toggleNotif(){document.getElementById('notifDrop').classList.toggle('open');}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.icon-btn')&&!e.target.closest('#notifDrop')) document.getElementById('notifDrop').classList.remove('open');
+});
+
+// Pop-up functions
+let pendingForm = null;
+let pendingEvent = null;
+
+function showCreatePopup(event) {
+  event.preventDefault();
+  showModal('success', 'Create Category', 'Are you sure you want to create this category?', document.getElementById('createCategoryForm'), null);
+}
+
+function showEditPopup(event) {
+  event.preventDefault();
+  showModal('info', 'Update Category', 'Are you sure you want to update this category?', document.getElementById('editCategoryForm'), null);
+}
+
+function showDeletePopup(event) {
+  event.preventDefault();
+  showModal('danger', 'Delete Category', 'Are you sure you want to delete this category?', event.target.form, event);
+}
+
+function showModal(type, title, message, form, event){
+  const modal = document.getElementById('confirmModal');
+  const icon = document.getElementById('modalIcon');
+  const titleEl = document.getElementById('modalTitle');
+  const messageEl = document.getElementById('modalMessage');
+  const confirmBtn = document.getElementById('modalConfirmBtn');
+  
+  // Reset classes
+  icon.classList.remove('success', 'info', 'danger');
+  confirmBtn.classList.remove('success', 'danger');
+  
+  // Set content
+  titleEl.textContent = title;
+  messageEl.textContent = message;
+  
+  // Set type-specific styling
+  if(type === 'success'){
+    icon.classList.add('success');
+    icon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
+    confirmBtn.classList.add('success');
+    confirmBtn.textContent = 'Yes';
+  } else if(type === 'info'){
+    icon.classList.add('info');
+    icon.innerHTML = '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+    confirmBtn.classList.add('info');
+    confirmBtn.textContent = 'Yes';
+  } else if(type === 'danger'){
+    icon.classList.add('danger');
+    icon.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+    confirmBtn.classList.add('danger');
+    confirmBtn.textContent = 'Yes';
+  }
+  
+  // Store pending action
+  pendingForm = form;
+  pendingEvent = event;
+  
+  // Show modal
+  modal.classList.add('active');
+}
+
+function closeModal(){
+  const modal = document.getElementById('confirmModal');
+  modal.classList.remove('active');
+  pendingForm = null;
+  pendingEvent = null;
+}
+
+function confirmAction(){
+  if(pendingForm){
+    pendingForm.submit();
+  } else if(pendingEvent){
+    // For delete actions that are forms
+    if(pendingEvent.target.tagName === 'FORM'){
+      pendingEvent.target.submit();
+    }
+  }
+  closeModal();
+}
+</script>
+</body>
+</html>

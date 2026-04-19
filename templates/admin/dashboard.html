@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AbideWord — Admin Dashboard</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo.png') }}"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+</head>
+<body>
+<div class="layout">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+{% include 'admin/components/sidebar.html' %}
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+
+  {% include 'admin/components/topbar.html' %}
+
+  {% include 'admin/components/dashboard_content.html' %}
+
+  {% include 'admin/components/footer.html' %}
+
+</div>
+</div>
+
+<script>
+// Set active nav item based on current URL
+document.addEventListener('DOMContentLoaded', function() {
+  const currentPath = window.location.pathname;
+  const navItems = document.querySelectorAll('.nav-item');
+  
+  // Remove active class from all nav items first
+  navItems.forEach(item => {
+    item.classList.remove('active');
+  });
+  
+  // Find the most specific matching nav item
+  let bestMatch = null;
+  let bestMatchLength = 0;
+  
+  navItems.forEach(item => {
+    const href = item.getAttribute('href');
+    if (href && currentPath.startsWith(href)) {
+      // Check if this is a better (longer) match
+      if (href.length > bestMatchLength) {
+        bestMatch = item;
+        bestMatchLength = href.length;
+      }
+    }
+  });
+  
+  // Add active class to the best match
+  if (bestMatch) {
+    bestMatch.classList.add('active');
+  }
+});
+
+// Date
+const d = new Date();
+document.getElementById('bannerDate').textContent = d.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+// Sidebar
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// Page nav
+const pageLabels={dashboard:'Dashboard',categories:'Categories',topics:'Topics',users:'Admin Users',settings:'Settings'};
+function showPage(id,el){
+  document.querySelectorAll('.page-content').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item:not(.logout)').forEach(n=>n.classList.remove('active'));
+  if(el && !el.classList.contains('logout')) el.classList.add('active');
+  document.getElementById('pageLabel').textContent = pageLabels[id]||id;
+  closeSidebar();
+}
+
+// Forms
+function toggleForm(id){
+  const el=document.getElementById(id);
+  el.style.display=el.style.display==='none'?'block':'none';
+  if(el.style.display==='block') el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// Slug
+function autoSlug(inp,tid){
+  document.getElementById(tid).value=inp.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+
+// Tab filter
+function setTab(btn){
+  btn.closest('.tab-filter').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// Notifications
+function toggleNotif(){document.getElementById('notifDrop').classList.toggle('open');}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.icon-btn')&&!e.target.closest('#notifDrop')) document.getElementById('notifDrop').classList.remove('open');
+});
+
+// Chart
+let chartInstance = null;
+function rebuildChart(){
+  const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+  const barColor = isDark ? 'rgba(255,255,255,0.85)' : '#0C2340';
+  const barColor2 = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(12,35,64,0.2)';
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+  const tickColor = isDark ? '#93B5D4' : '#6B7280';
+
+  if(chartInstance) chartInstance.destroy();
+  const ctx = document.getElementById('topicsChart').getContext('2d');
+  chartInstance = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:['Nov','Dec','Jan','Feb','Mar','Apr'],
+      datasets:[
+        {label:'Published',data:[3,5,4,7,6,6],backgroundColor:barColor,borderRadius:5,borderSkipped:false},
+        {label:'Drafts',data:[2,3,5,4,3,4],backgroundColor:barColor2,borderRadius:5,borderSkipped:false}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,padding:14,color:tickColor}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11},color:tickColor}},
+        y:{grid:{color:gridColor},ticks:{font:{size:11},color:tickColor,stepSize:2},beginAtZero:true}
+      }
+    }
+  });
+}
+
+rebuildChart();
+</script>
+</body>
+</html>

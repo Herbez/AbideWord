@@ -1,0 +1,344 @@
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:        #0C2340;
+    --navy-hover:  #163659;
+    --amber:       #BA7517;
+    --amber-light: #FAEEDA;
+    --amber-mid:   #EF9F27;
+    --page-bg:     #E5E9EF;
+    --white:       #FFFFFF;
+    --text-dark:   #0C2340;
+    --text-muted:  #6B7280;
+    --border:      #DDE1E9;
+    --input-bg:    #F8F9FB;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--page-bg);
+    font-family: 'Inter', sans-serif;
+    color: var(--text-dark);
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1.5rem;
+  }
+
+  /* subtle dot grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle, #CBD5E1 1px, transparent 1px);
+    background-size: 28px 28px;
+    opacity: 0.45;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .card {
+    position: relative;
+    z-index: 1;
+    background: var(--white);
+    border-radius: 20px;
+    border: 0.5px solid var(--border);
+    width: 100%;
+    max-width: 320px;
+    padding: 1.75rem 1.75rem 1.5rem;
+    animation: fadeUp 0.45s ease both;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Logo area ── */
+  .logo-area {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    gap: 12px;
+  }
+
+  .logo-box {
+    width: 48px;
+    height: 48px;
+    background: var(--navy);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .logo-box svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .logo-dot {
+    position: absolute;
+    bottom: -3px;
+    right: -3px;
+    width: 14px;
+    height: 14px;
+    background: var(--amber-mid);
+    border-radius: 50%;
+    border: 2px solid var(--white);
+  }
+
+  .brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: -0.3px;
+  }
+
+  .brand-tagline {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 3px;
+    font-weight: 300;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    height: 0.5px;
+    background: var(--border);
+    margin-bottom: 1rem;
+  }
+
+  /* ── Headings ── */
+  .form-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+
+  .form-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 1.75rem;
+    font-weight: 300;
+  }
+
+  /* ── Fields ── */
+  .field {
+    margin-bottom: 1.1rem;
+  }
+
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-dark);
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  .input-wrap svg {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 15px;
+    height: 15px;
+    stroke: var(--text-muted);
+    fill: none;
+    stroke-width: 1.8;
+    pointer-events: none;
+    transition: stroke 0.2s;
+  }
+
+  .field input {
+    width: 100%;
+    padding: 10.5px 14px 10.5px 38px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-dark);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  }
+
+  .field input::placeholder {
+    color: #B0B7C3;
+    font-weight: 300;
+  }
+
+  .field input:focus {
+    border-color: var(--navy);
+    border-width: 1.5px;
+    background: var(--white);
+    box-shadow: 0 0 0 3.5px rgba(12, 35, 64, 0.08);
+  }
+
+  .field input:focus + svg,
+  .input-wrap:focus-within svg {
+    stroke: var(--navy);
+  }
+
+  /* icon order fix — icon after input in DOM but positioned absolute */
+  .input-wrap input { order: 1; }
+  .input-wrap svg   { order: 0; }
+
+  /* ── Toggle Password Button ── */
+  .toggle-password {
+    position: absolute;
+    right: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+  }
+
+  .toggle-password svg {
+    position: static;
+    width: 18px;
+    height: 18px;
+    stroke: var(--text-muted);
+    fill: none;
+    stroke-width: 1.8;
+    transition: stroke 0.2s;
+    transform: none;
+  }
+
+  .toggle-password:hover svg {
+    stroke: var(--navy);
+  }
+
+  .lock-icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 15px;
+    height: 15px;
+    stroke: var(--text-muted);
+    fill: none;
+    stroke-width: 1.8;
+    pointer-events: none;
+    transition: stroke 0.2s;
+  }
+
+  /* ── Forgot ── */
+  .forgot-row {
+    display: flex; 
+    justify-content: flex-end;
+    margin-top: -0.5rem;
+    margin-bottom: 1.4rem;
+  }
+
+  .forgot-row a {
+    font-size: 12.5px;
+    color: var(--amber);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+
+  .forgot-row a:hover { color: var(--amber-mid); }
+
+  /* ── Button ── */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    background: var(--navy);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.01em;
+  }
+
+  .btn:hover  { background: var(--navy-hover); }
+  .btn:active { transform: scale(0.985); }
+
+  .btn svg {
+    width: 15px;
+    height: 15px;
+    stroke: #FFFFFF;
+    fill: none;
+    stroke-width: 2;
+  }
+
+  .btn .spinner {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* ── Footer ── */
+  .card-footer {
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 0.5px solid var(--border);
+    text-align: center;
+  }
+
+  .card-footer a {
+    font-size: 12.5px;
+    color: var(--amber);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+    .card-footer p {
+    font-size: 12px;
+    color: var(--navy);
+    font-weight: 300;
+
+  }
+  .card-footer a:hover { color: var(--amber-mid); }
+
+  .amber-mark {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--amber-mid);
+    vertical-align: middle;
+    margin: 0 5px;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 480px) {
+    .card { padding: 2rem 1.5rem 1.75rem; }
+    .logo-box { width: 62px; height: 62px; border-radius: 15px; }
+    .logo-box svg { width: 30px; height: 30px; }
+    .brand-name { font-size: 20px; }
+  }

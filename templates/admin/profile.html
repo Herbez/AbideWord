@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Profile — AbideWord Admin</title>
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo.png') }}"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+<script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+</head>
+<body>
+<div class="layout">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+{% include 'admin/components/sidebar.html' %}
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+
+  {% include 'admin/components/topbar.html' %}
+
+  <!-- CONTENT -->
+  <main class="content">
+
+
+    <div class="banner">
+      <div class="banner-text">
+        <div class="banner-title">Profile Settings</div>
+        <div class="banner-sub">View and edit your profile information</div>
+        <div class="banner-date" id="bannerDate"></div>
+      </div>
+      <div class="banner-icon">
+        <svg viewBox="0 0 24 24"><path d="M6 2h12a1 1 0 011 1v18l-7-3-7 3V3a1 1 0 011-1z"/></svg>
+      </div>
+    </div>
+
+    <!-- ══ PROFILE ══ -->
+    <div class="page-content active">
+      <div class="section-header">
+        <span class="section-title">My Profile</span>
+      </div>
+
+      <div class="full-panel">
+        <div class="panel-header">
+          <span class="panel-title">Profile Information</span>
+          <button class="btn-primary" onclick="window.location.href='/admin/users/{{ current_user.id }}/edit'">Edit Profile</button>
+        </div>
+        
+        <div class="profile-header">
+          <div class="profile-avatar-large">
+            {% if current_user.photo %}
+              <img src="{{ url_for('static', filename='uploads/users/' + current_user.photo) }}" alt="{{ current_user.name }}"/>
+            {% else %}
+              {{ current_user.name[:2].upper() }}
+            {% endif %} 
+          </div>
+          <div class="profile-info-large">
+            <h2>{{ current_user.name }}</h2>
+            <p>{{ current_user.email }}</p>
+            <span class="profile-badge">{{ 'Super Admin' if current_user.is_super_admin else current_user.role|capitalize }}</span>
+          </div>
+        </div>
+
+        <form>
+          <div class="form-section">
+            <div class="form-grid">
+              <div class="form-field full">
+                <label>Full Name</label>
+                <input type="text" value="{{ current_user.name }}" readonly />
+              </div>
+              <div class="form-field full">
+                <label>Email Address</label>
+                <input type="email" value="{{ current_user.email }}" readonly />
+              </div>
+              <div class="form-field full">
+                <label>Role</label>
+                <input type="text" value="{{ 'Super Admin' if current_user.is_super_admin else current_user.role|capitalize }}" readonly />
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  {% include 'admin/components/footer.html' %}
+</div>
+</div>
+
+<script>
+// Sidebar
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+</script>
+</body>
+</html>
