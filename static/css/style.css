@@ -668,6 +668,16 @@ tbody td{padding:10px 1.1rem;color:var(--text-primary);vertical-align:middle;}
   .content{padding:1.1rem;}
   .footer{flex-direction:column;gap:3px;text-align:center;}
   .notif-dropdown{right:8px;width:270px;}
+  .filter-bar{flex-direction:column;align-items:stretch;}
+  .filter-bar select{min-width:auto;width:100%;}
+  .filter-bar input{flex:none;width:100%;}
+  .filter-bar button{width:100%;}
+  .view-modal{padding:10px;}
+  .view-modal-content{max-height:90vh;}
+  .view-modal-header{padding:16px 20px;}
+  .view-modal-body{padding:20px;}
+  .view-modal-meta{flex-direction:column;gap:16px;}
+  .view-modal-content-scroll{max-height:200px;}
 }
 @media(max-width:480px){
   .cards-grid{grid-template-columns:1fr;}
