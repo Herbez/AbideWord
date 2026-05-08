@@ -2,10 +2,11 @@ from flask import Flask, render_template, redirect, url_for, request, session, f
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
-from models import db, Category, Topics , User
+from models import db, Category, Topics , User, PasswordResetToken
 import uuid
 import os
 from werkzeug.utils import secure_filename
+from email_service import email_service
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -13,6 +14,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your-secret-key-change-this-in-production'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 db.init_app(app)
+
+# Initialize email service
+email_service.init_app(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -25,7 +29,7 @@ def load_user(user_id):
 
 @app.route('/')
 def index():
-    return render_template('login.html')
+    return render_template('auth/login.html')
 
 @app.route('/signin', methods=['GET', 'POST'])
 def login():
@@ -47,11 +51,88 @@ def login():
         else:
             flash('Invalid email or password', 'error')
     
-    return render_template('login.html')
+    return render_template('auth/login.html')
 
-@app.route('/reset-password')
+@app.route('/auth/reset-password', methods=['GET', 'POST'])
 def reset_password():
-    return render_template('reset_password.html')
+    if request.method == 'POST':
+        email = request.form.get('email')
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # Invalidate any existing tokens for this user
+            PasswordResetToken.query.filter_by(user_id=user.id, is_used=False).delete()
+            
+            # Generate new token
+            token = str(uuid.uuid4())
+            expires_at = datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
+            
+            reset_token = PasswordResetToken(
+                user_id=user.id,
+                token=token,
+                expires_at=expires_at
+            )
+            
+            db.session.add(reset_token)
+            db.session.commit()
+            
+            # Generate reset link
+            reset_link = url_for('confirm_reset_password', token=token, _external=True)
+            
+            # Send password reset email
+            email_sent = email_service.send_password_reset_email(user.email, reset_link)
+            
+            if email_sent:
+                flash('Password reset link has been sent to your email.', 'info')
+            else:
+                # Fallback: show the link in development if email fails
+                flash(f'Password reset link has been sent to your email. (Development: {reset_link})', 'info')
+        else:
+            # Don't reveal if email exists or not for security
+            flash('If an account with that email exists, a password reset link has been sent.', 'info')
+        
+        return redirect(url_for('reset_password'))
+    
+    return render_template('auth/reset_password.html')
+
+@app.route('/auth/reset-password/<token>', methods=['GET', 'POST'])
+def confirm_reset_password(token):
+    # Find the reset token
+    reset_token = PasswordResetToken.query.filter_by(
+        token=token, 
+        is_used=False
+    ).first()
+    
+    # Check if token is valid
+    if not reset_token or reset_token.expires_at < datetime.utcnow():
+        flash('Invalid or expired reset token. Please request a new password reset.', 'error')
+        return redirect(url_for('reset_password'))
+    
+    if request.method == 'POST':
+        new_password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not new_password or not confirm_password:
+            flash('Please fill in all fields.', 'error')
+        elif new_password != confirm_password:
+            flash('Passwords do not match.', 'error')
+        elif len(new_password) < 6:
+            flash('Password must be at least 6 characters long.', 'error')
+        else:
+            # Update user password
+            user = reset_token.user
+            user.password_hash = generate_password_hash(new_password)
+            
+            # Mark token as used
+            reset_token.is_used = True
+            
+            db.session.commit()
+            
+            flash('Your password has been reset successfully. Please log in with your new password.', 'success')
+            return redirect(url_for('login'))
+    
+    return render_template('auth/confirm_reset_password.html', token=token)
 
 @app.route('/logout')
 @login_required
@@ -409,22 +490,7 @@ def settings():
 def profile():
     return render_template('admin/profile.html')
 
-def create_default_admin():
-    admin = User.query.filter_by(email='admin@truedisciple.rw').first()
-    if not admin:
-        hashed_password = generate_password_hash('admin@herbez#7')
-        admin = User(
-            name='Admin',
-            email='admin@truedisciple.rw',
-            password_hash=hashed_password,
-            is_super_admin=True
-        )
-        db.session.add(admin)
-        db.session.commit()
-        print('Default admin user created: admin@truedisciple.rw')
-
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-        create_default_admin()
     app.run(debug=True)
